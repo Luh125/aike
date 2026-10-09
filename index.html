@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>课程报告在线生成 · 艾科编程 · UHAO25</title>
+<title>课程报告生成器 · 艾科编程</title>
 <style>
 :root{
   --bg:#0b1020; --panel:#121a30; --panel2:#1a2340; --line:#26325a;
@@ -117,21 +117,91 @@ input[type=color]{width:46px;height:32px;padding:0;border:1px solid var(--line);
 .toast.on{opacity:1}
 .seg{display:flex;gap:6px;flex-wrap:wrap}
 .seg .btn.on{background:#20305c;border-color:var(--acc2);color:#fff}
+.hdrMore{display:flex;align-items:center;gap:10px}
+.grabber{display:none}
+
+/* ============ 手机 / 窄屏适配 ============ */
+@media (max-width: 900px){
+  header{padding:8px 10px;gap:6px}
+  header h1{font-size:14px;margin-right:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+  header h1 span{display:none}
+  /* 添加按钮在底部面板里也有，头部收起来保证一行放得下 */
+  #btnAddText,#btnAddImg{display:none}
+  header{flex-wrap:nowrap}
+  #btnExport{white-space:nowrap}
+  .btn{padding:9px 12px;font-size:14px}          /* 触摸目标加大 */
+  .btn.small{padding:8px 10px;font-size:13px}
+  #btnMore{display:inline-block !important}
+  .hdrMore{
+    display:none; position:absolute; right:8px; top:52px; z-index:30;
+    flex-direction:column; align-items:stretch; gap:8px;
+    background:var(--panel); border:1px solid var(--line); border-radius:10px;
+    padding:10px; box-shadow:0 12px 30px rgba(0,0,0,.5); min-width:170px;
+  }
+  .hdrMore.on{display:flex}
+  main{flex-direction:column;padding-bottom:46px}   /* 给底部抽屉的把手留位置 */
+  #stageWrap{padding:8px;align-items:flex-start}
+  #stage{width:100%;border-radius:8px}
+  /* 侧栏 → 底部抽屉 */
+  aside{
+    position:fixed; left:0; right:0; bottom:0; top:auto;
+    flex:0 0 auto; width:auto; height:56vh; max-height:74vh;
+    border-left:none; border-top:1px solid var(--line);
+    border-radius:16px 16px 0 0; box-shadow:0 -10px 34px rgba(0,0,0,.55);
+    transform:translateY(calc(100% - 46px)); transition:transform .26s ease;
+    z-index:25;
+  }
+  aside.open{transform:translateY(0)}
+  aside .grabber{
+    display:flex; align-items:center; justify-content:center;
+    height:46px; flex:0 0 auto; cursor:pointer;
+  }
+  aside .grabber span{
+    width:44px; height:5px; border-radius:3px; background:#4a5a8c; display:block;
+  }
+  aside .grabber::after{
+    content:'面板'; font-size:12px; color:var(--sub); margin-left:10px;
+  }
+  aside.open .grabber::after{content:'收起'}
+  aside.open .grabber{border-bottom:1px solid var(--line)}
+  aside .tabs div{padding:12px 0;font-size:14px}
+  aside .body{padding:12px;-webkit-overflow-scrolling:touch}
+  /* 输入框 16px，防止 iOS 聚焦时自动放大页面 */
+  input[type=text],textarea,select{font-size:16px;padding:10px}
+  .row{margin-bottom:14px}
+  .card{padding:12px}
+  .fieldItem{padding:12px 10px;font-size:14px}
+  /* 缩放手柄在手指下要够大 */
+  .handle{width:28px;height:28px;right:-14px;bottom:-14px;border-radius:8px}
+  /* 触摸拖动 */
+  .fbox,.handle{touch-action:none}
+  #modal .box{max-height:62vh}
+  #modal img{width:min(94vw,460px)}
+  #modal .bar{width:92vw}
+  #modal .bar .btn{flex:1 1 auto}
+}
+@media (max-width: 900px) and (orientation: landscape){
+  aside{height:72vh}
+  main{padding-bottom:40px}
+}
 </style>
 </head>
 <body>
 <header>
-  <h1><span>◆</span> 课程报告生成</h1>
-  <button class="btn" id="btnBg">上传底图</button>
-  <button class="btn ghost" id="btnBgReset">还原默认底图</button>
+  <h1><span>◆</span> 课程报告生成器</h1>
   <button class="btn" id="btnAddText">+ 文本</button>
-  <button class="btn" id="btnAddImg">+ 照片位(4:3)</button>
-  <button class="btn" id="btnAddImgFree">+ 照片位(自由)</button>
+  <button class="btn" id="btnAddImg">+ 照片位</button>
   <span style="flex:1"></span>
-  <label class="chk"><input type="checkbox" id="chkGuides" checked> 显示编辑框</label>
-  <button class="btn ghost" id="btnSave">保存配置</button>
-  <button class="btn ghost" id="btnLoad">载入配置</button>
-  <button class="btn danger ghost" id="btnReset">重置</button>
+  <button class="btn ghost" id="btnMore" style="display:none">⋯ 更多</button>
+  <div class="hdrMore" id="hdrMore">
+    <button class="btn ghost" id="btnBg">上传底图</button>
+    <button class="btn ghost" id="btnBgReset">还原默认底图</button>
+    <button class="btn" id="btnAddImgFree">+ 自由比例照片</button>
+    <label class="chk"><input type="checkbox" id="chkGuides" checked> 显示编辑框</label>
+    <button class="btn ghost" id="btnSave">保存配置</button>
+    <button class="btn ghost" id="btnLoad">载入配置</button>
+    <button class="btn danger ghost" id="btnReset">重置</button>
+  </div>
   <button class="btn primary" id="btnExport">导出图片</button>
 </header>
 
@@ -143,7 +213,8 @@ input[type=color]{width:46px;height:32px;padding:0;border:1px solid var(--line);
     </div>
   </div>
 
-  <aside>
+  <aside id="aside">
+    <div class="grabber" id="grabber"><span></span></div>
     <div class="tabs">
       <div class="on" data-tab="fields">字段</div>
       <div data-tab="props">属性</div>
@@ -201,6 +272,16 @@ input[type=color]{width:46px;height:32px;padding:0;border:1px solid var(--line);
           </div>
         </div>
         <div class="card">
+          <h3>手机上怎么用</h3>
+          <div class="tip">
+            • 底部有个<b>面板把手</b>，往上拖/点一下展开，收起时只露一条边。<br>
+            • 点画布上的框 → 面板自动展开，直接改内容。<br>
+            • 手指<b>按住框拖动</b>移动位置，拖<b>右下角方块</b>缩放（手机上方块更大，好按）。<br>
+            • 传照片用底部面板里的「上传照片」，会调起相册或直接拍照。<br>
+            • 导出后如果「下载图片」没反应，就<b>长按预览图 → 存储到相册</b>，或点「复制图片」粘贴到微信。
+          </div>
+        </div>
+        <div class="card">
           <h3>快捷键</h3>
           <div class="tip">
             <span class="kbd">Ctrl/⌘ + V</span> 粘贴剪贴板图片 → 自动生成照片字段<br>
@@ -228,8 +309,10 @@ input[type=color]{width:46px;height:32px;padding:0;border:1px solid var(--line);
 
 <div id="modal">
   <div class="box"><img id="modalImg" alt="导出预览"></div>
+  <div class="tip" id="modalTip" style="color:#fbbf24;text-align:center;max-width:90vw"></div>
   <div class="bar">
     <button class="btn primary" id="btnDownload">下载图片</button>
+    <button class="btn" id="btnCopyImg">复制图片</button>
     <button class="btn" id="btnModalClose">关闭</button>
   </div>
 </div>
@@ -285,6 +368,11 @@ let photoTargetId = null;
 
 function toast(msg){
   const t = $('#toast'); t.textContent = msg; t.classList.add('on');
+  if(isNarrow()){
+    const open = $('#aside') && $('#aside').classList.contains('open');
+    t.style.top = open ? '36%' : '';
+    t.style.bottom = open ? '' : '78px';
+  } else { t.style.top = ''; t.style.bottom = ''; }
   clearTimeout(t._t); t._t = setTimeout(()=>t.classList.remove('on'), 1800);
 }
 const uid = () => 'f' + Math.random().toString(36).slice(2,8);
@@ -422,17 +510,23 @@ function drawOverlay(){
     d.dataset.id = f.id;
     const tag = document.createElement('div'); tag.className='tag'; tag.textContent = f.label || (f.type==='image'?'照片':'文本');
     d.appendChild(tag);
-    if(f.type==='image'){ const hn=document.createElement('div'); hn.className='hint'; hn.textContent = f.img ? '' : (f.free ? '点击右侧上传照片（自由比例）' : '点击右侧上传照片（4:3）'); d.appendChild(hn); }
+    if(f.type==='image'){ const hn=document.createElement('div'); hn.className='hint';
+      hn.textContent = f.img ? '' : (isNarrow() ? '点底部面板上传照片' : (f.free ? '点击右侧上传照片（自由比例）' : '点击右侧上传照片（4:3）'));
+      d.appendChild(hn); }
     const hd = document.createElement('div'); hd.className='handle'; hd.dataset.id=f.id; d.appendChild(hd);
-    d.addEventListener('mousedown', e => { if(e.target.classList.contains('handle')) return; startDrag(e, f, 'move'); });
-    hd.addEventListener('mousedown', e => { e.stopPropagation(); startDrag(e, f, 'resize'); });
+    d.addEventListener('pointerdown', e => { if(e.target.classList.contains('handle')) return; startDrag(e, f, 'move'); });
+    hd.addEventListener('pointerdown', e => { e.stopPropagation(); startDrag(e, f, 'resize'); });
     overlay.appendChild(d);
   }
 }
 function startDrag(e, f, mode){
+  if(e.button != null && e.button !== 0 && e.pointerType === 'mouse') return;
   e.preventDefault(); selectField(f.id);
   const rect = stage.getBoundingClientRect();
   const sx = e.clientX, sy = e.clientY, ox = f.x, oy = f.y, ow = f.w, oh = f.h;
+  if(e.pointerId != null && e.target.setPointerCapture){
+    try{ e.target.setPointerCapture(e.pointerId); }catch(err){}
+  }
   const move = ev => {
     const dx = (ev.clientX - sx)/rect.width*100, dy = (ev.clientY - sy)/rect.height*100;
     if(mode === 'move'){
@@ -451,8 +545,15 @@ function startDrag(e, f, mode){
     if(el){ el.style.left=f.x+'%'; el.style.top=f.y+'%'; el.style.width=f.w+'%'; el.style.height=f.h+'%'; }
     scheduleRender(); syncPropInputs();
   };
-  const up = () => { document.removeEventListener('mousemove', move); document.removeEventListener('mouseup', up); render(); renderProps(); };
-  document.addEventListener('mousemove', move); document.addEventListener('mouseup', up);
+  const up = () => {
+    document.removeEventListener('pointermove', move);
+    document.removeEventListener('pointerup', up);
+    document.removeEventListener('pointercancel', up);
+    render(); renderProps(); save();
+  };
+  document.addEventListener('pointermove', move);
+  document.addEventListener('pointerup', up);
+  document.addEventListener('pointercancel', up);
 }
 let _rt = null;
 function scheduleRender(){ clearTimeout(_rt); _rt = setTimeout(render, 30); }
@@ -462,7 +563,12 @@ function showTab(k){
   document.querySelectorAll('.tabs div').forEach(x => x.classList.toggle('on', x.dataset.tab === k));
   ['fields','props','help'].forEach(n => $('#tab-'+n).style.display = (n === k ? '' : 'none'));
 }
-function selectField(id){ state.sel = id; showTab('props'); drawOverlay(); renderFieldList(); renderProps(); }
+function isNarrow(){ return window.matchMedia && window.matchMedia('(max-width: 900px)').matches; }
+function openDrawer(open){ const a = $('#aside'); if(a) a.classList.toggle('open', !!open); }
+function selectField(id){
+  state.sel = id; showTab('props'); drawOverlay(); renderFieldList(); renderProps();
+  if(isNarrow()) openDrawer(true);      // 手机上选中后自动展开面板，方便马上改内容
+}
 function renderFieldList(){
   const box = $('#fieldList'); box.innerHTML = '';
   state.fields.forEach(f => {
@@ -882,26 +988,31 @@ $('#btnReset').onclick = () => {
 };
 
 /* ============ 导出 ============ */
-let lastBlobUrl = null, lastFileName = '';
-$('#btnExport').onclick = () => {
+let lastBlobUrl = null, lastFileName = '', lastBlob = null;
+$('#btnExport').onclick = async () => {
   if(!state.bgImg){ toast('底图还没准备好'); return; }
   const nat = state.bgImg.naturalWidth, nah = state.bgImg.naturalHeight;
   let s = state.scale;
-  while(s > 0.5 && (nat*s > 8000 || nah*s > 16000 || nat*s*nah*s > 90e6)) s -= 0.25;
+  // 手机内存小，像素上限收紧
+  const maxPix = isNarrow() ? 40e6 : 90e6;
+  while(s > 0.5 && (nat*s > 8000 || nah*s > 16000 || nat*s*nah*s > maxPix)) s -= 0.25;
   const W = Math.round(nat*s), H = Math.round(nah*s);
   const c = document.createElement('canvas'); c.width = W; c.height = H;
   const cx = c.getContext('2d');
   cx.fillStyle = '#fff'; cx.fillRect(0,0,W,H);
   drawAll(cx, s);
-  let url, ext;
+  let url, ext, blob = null;
   try{
+    if(c.toBlob){
+      blob = await new Promise(res => c.toBlob(res, state.fmt === 'jpeg' ? 'image/jpeg' : 'image/png', state.fmt === 'jpeg' ? 0.92 : undefined));
+    }
     url = c.toDataURL(state.fmt === 'jpeg' ? 'image/jpeg' : 'image/png', state.fmt === 'jpeg' ? 0.92 : undefined);
     ext = state.fmt === 'jpeg' ? 'jpg' : 'png';
   }catch(err){
     toast('导出失败：浏览器安全限制，请点击「上传底图」重新选择本地图片后重试');
     return;
   }
-  lastBlobUrl = url;
+  lastBlobUrl = url; lastBlob = blob;
   const nameField = state.fields.find(f => f.type==='text' && /姓名|标题|学生|学员/.test(f.label) && f.text)
                  || state.fields.find(f => f.type==='text' && f.text);
   const nm = (nameField ? nameField.text.split('\n')[0] : '课程报告').replace(/[\\/:*?"<>|]/g,'').slice(0,20);
@@ -909,12 +1020,37 @@ $('#btnExport').onclick = () => {
   const ds = `${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}`;
   lastFileName = `课程报告_${nm}_${ds}.${ext}`;
   $('#modalImg').src = url; $('#modal').classList.add('on');
+  const ios = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  $('#modalTip').innerHTML = (isNarrow() || ios)
+    ? '手机上如果点「下载图片」没反应，就<b>长按上面这张图 → 存储到相册</b>，或点「复制图片」去微信里粘贴。'
+    : '';
   if(s !== state.scale) toast(`尺寸过大，已按 ${s}x 导出（${W}×${H}）`);
 };
 $('#btnDownload').onclick = () => {
   if(!lastBlobUrl) return;
-  const a = document.createElement('a'); a.href = lastBlobUrl; a.download = lastFileName; a.click();
-  toast('已开始下载');
+  try{
+    if(lastBlob && navigator.msSaveOrOpenBlob){ navigator.msSaveOrOpenBlob(lastBlob, lastFileName); toast('已开始下载'); return; }
+    const a = document.createElement('a');
+    if(lastBlob){ a.href = URL.createObjectURL(lastBlob); setTimeout(()=>URL.revokeObjectURL(a.href), 8000); }
+    else a.href = lastBlobUrl;
+    a.download = lastFileName; a.target = '_blank'; a.rel = 'noopener';
+    document.body.appendChild(a); a.click(); a.remove();
+    toast('已开始下载');
+  }catch(err){
+    // iOS Safari 等不支持下载的场景：新窗口打开，用户长按保存
+    try{ window.open(lastBlobUrl, '_blank'); toast('已在新窗口打开，请长按图片保存'); }
+    catch(e2){ toast('请长按上面的图片保存到相册'); }
+  }
+};
+$('#btnCopyImg').onclick = async () => {
+  if(!lastBlob){ toast('请先导出一次'); return; }
+  try{
+    if(!(navigator.clipboard && window.ClipboardItem)) throw new Error('unsupported');
+    await navigator.clipboard.write([new ClipboardItem({ [lastBlob.type || 'image/png']: lastBlob })]);
+    toast('图片已复制，去微信/备忘录里粘贴即可');
+  }catch(err){
+    toast('这个浏览器不支持复制图片，请长按图片保存');
+  }
 };
 $('#btnModalClose').onclick = () => $('#modal').classList.remove('on');
 $('#modal').addEventListener('click', e => { if(e.target.id === 'modal') $('#modal').classList.remove('on'); });
@@ -926,6 +1062,24 @@ document.querySelectorAll('.tabs div').forEach(t => t.onclick = () => {
   ['fields','props','help'].forEach(k => $('#tab-'+k).style.display = (k === t.dataset.tab ? '' : 'none'));
 });
 $('#chkGuides').onchange = e => { state.showGuides = e.target.checked; drawOverlay(); };
+/* 底部抽屉把手 */
+$('#grabber').addEventListener('click', () => openDrawer(!$('#aside').classList.contains('open')));
+document.querySelectorAll('.tabs div').forEach(t => {
+  t.addEventListener('click', () => { if(isNarrow()) openDrawer(true); });
+});
+/* 更多菜单 */
+$('#btnMore').onclick = e => {
+  e.stopPropagation(); $('#hdrMore').classList.toggle('on');
+};
+document.addEventListener('click', e => {
+  const m = $('#hdrMore'); if(!m) return;
+  if(m.classList.contains('on') && !m.contains(e.target) && e.target.id !== 'btnMore') m.classList.remove('on');
+});
+$('#hdrMore').addEventListener('click', e => {
+  if(e.target.tagName === 'BUTTON') setTimeout(() => $('#hdrMore').classList.remove('on'), 150);
+});
+/* 横竖屏切换、键盘弹起时重新适配 */
+window.addEventListener('resize', () => { if(!isNarrow()) openDrawer(false); });
 document.querySelectorAll('#segScale .btn').forEach(b => b.onclick = () => {
   document.querySelectorAll('#segScale .btn').forEach(x => x.classList.remove('on')); b.classList.add('on');
   state.scale = +b.dataset.s; renderFieldList(); renderProps(); save();
